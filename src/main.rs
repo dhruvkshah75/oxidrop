@@ -1,3 +1,4 @@
 fn main() {
-    println!("Hello, world!");
+    let name = String::from("oxidrop");
+    println!("Welcome to {}", name);
 }
