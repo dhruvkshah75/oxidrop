@@ -1,2 +1,8 @@
 # Oxidrop
-Sent files from iPad to laptop with just a tap 
+Blazing fast wireless file sync for linux and mobile 
+
+
+## Run 
+```bash
+cargo run 
+```
