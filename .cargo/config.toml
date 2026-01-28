@@ -1,0 +1,7 @@
+[net]
+# Force cargo to use the git-based registry instead of HTTP
+git-fetch-with-cli = true
+
+[http]
+ssl-verify = false
+check-revoke = false

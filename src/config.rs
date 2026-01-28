@@ -8,10 +8,16 @@ pub struct Config {
     pub server_port: u16,
     pub host_addr: String,
     pub auth_username: String,
+    pub auth_password: String,
 }
 
 // implementation Container of the config Struct 
 impl Config {
+    // gives the address host_adrr:port  ==>> 0.0.0.0:9090
+    pub fn get_addr(&self) -> String {
+        format!("{}:{}", self.host_addr, self.server_port)
+    }
+
     pub fn load() -> Self {
 
         // loads the env var and .expect(): if dotenv fails then it will crash and prompt this message 
@@ -39,8 +45,10 @@ impl Config {
         // load the host address
         let host_addr = match env::var("HOST_ADDR") {
             Ok(host_addr) => host_addr,
-            Err(e) =>  panic!("Configuration Error Host Address Missing: {}", e),  
-            // panic is used to avoid return type mismatches
+            Err(e) =>  {
+                eprintln!("Configuration Error Host Address Missing: {}", e); 
+                std::process::exit(1);
+            }
         };
 
         // load the auth_username => required 
@@ -52,11 +60,22 @@ impl Config {
             }
         };
 
+        // load the password => required to verify 
+        let auth_password = match env::var("AUTH_PASSWORD") {
+            Ok(auth_password) => auth_password,
+            Err(e) => {
+                eprintln!("Login error password missing: {}", e);
+                std::process::exit(1);
+            }
+        };
 
 
         let server_port: u16 = server_port_str
             .parse()
             .expect("PORT in .env must be a valid number between 0 and 65535");
+
+        
+        
 
 
         // Return the completed Config struct
@@ -65,7 +84,7 @@ impl Config {
             server_port,
             host_addr,
             auth_username,
-            
+            auth_password
         }
     }
 }
