@@ -6,6 +6,8 @@ use dotenvy::dotenv;
 pub struct Config {
     pub storage_path: PathBuf,
     pub server_port: u16,
+    pub host_addr: String,
+    pub auth_username: String,
 }
 
 // implementation Container of the config Struct 
@@ -34,15 +36,36 @@ impl Config {
             }
         };
 
+        // load the host address
+        let host_addr = match env::var("HOST_ADDR") {
+            Ok(host_addr) => host_addr,
+            Err(e) =>  panic!("Configuration Error Host Address Missing: {}", e),  
+            // panic is used to avoid return type mismatches
+        };
+
+        // load the auth_username => required 
+        let auth_username = match env::var("AUTH_USERNAME") {
+            Ok(auth_username) => auth_username,
+            Err(e) => {
+                eprintln!("Login Error Username Missing: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+
+
         let server_port: u16 = server_port_str
             .parse()
             .expect("PORT in .env must be a valid number between 0 and 65535");
 
-            
+
         // Return the completed Config struct
         Self {
             storage_path,
             server_port,
+            host_addr,
+            auth_username,
+            
         }
     }
 }
