@@ -1,8 +1,11 @@
 use crate::config::Config;
+use std::sync::Arc;
 
 mod config;
 mod storage;
 mod server;
+
+// we need to allow shared ownership of the config struct so that multiple handlers can use it 
 
 #[tokio::main]
 async fn main() {
@@ -21,6 +24,9 @@ async fn main() {
     println!("Server listening on {}", addr); 
     println!("Storage initialized at: {:?}", config.storage_path);
 
-    server::start(config).await;
+    // Wrap the config in an arc to allow multiple handlers to use it 
+    let shared_config = Arc::new(config);  // beyond this config cannot be used: Rust Ownership model
+
+    server::start(shared_config).await;
 
 }

@@ -7,11 +7,16 @@
   <p>
     <b>Bridging the Gap Between Your Desk and Your Devices</b>
   </p>
-  
 
+![Rust Version](https://img.shields.io/badge/rust-1.75+-E32F26.svg?style=flat&logo=rust&logoColor=white)
+![Axum](https://img.shields.io/badge/axum-v0.7-blueviolet.svg?style=flat)
+![Tokio](https://img.shields.io/badge/tokio-v1.36-00ADD8.svg?style=flat)
+![Status](https://img.shields.io/badge/status-active-success.svg?style=flat)
+![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
 </div>
 
-**High-Performance Private Cloud Gateway**
+
+
 
 Oxidrop is a localized, lightning-fast file synchronization and streaming service designed to bridge the gap between your Linux workstation and remote devices (like an iPad/iPhone). It bypasses third-party cloud providers and network restrictions by serving files directly from your local hardware.
 
