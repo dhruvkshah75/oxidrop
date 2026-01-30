@@ -3,3 +3,5 @@ ROADMAP.md
 .env
 # the main storage file 
 oxidropStorage/
+
+.cargo
