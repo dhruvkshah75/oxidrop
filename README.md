@@ -1,12 +1,20 @@
-# Oxidrop
+<div align="center">
+
+  <img src="assets/logo.png" alt="logo" width="400" height="auto" />
+  
+  <h1>oxidrop</h1>
+  
+  <p>
+    <b>Bridging the Gap Between Your Desk and Your Devices</b>
+  </p>
+  
+
+</div>
 
 **High-Performance Private Cloud Gateway**
 
 Oxidrop is a localized, lightning-fast file synchronization and streaming service designed to bridge the gap between your Linux workstation and remote devices (like an iPad/iPhone). It bypasses third-party cloud providers and network restrictions by serving files directly from your local hardware.
 
-## Vision & Philosophy
-
-Oxidrop provides total control over your data. Unlike commercial solutions, it runs entirely on your local network, ensuring privacy and blazing-fast speeds. It leverages **Rust** for safety and stability, maintaining high performance even under heavy loads.
 
 ## Architecture
 
