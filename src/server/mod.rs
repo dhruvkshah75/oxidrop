@@ -1,5 +1,6 @@
 use axum::{
-    routing::get, 
+    routing::get,
+    routing::any, 
     Router, 
     extract::State
 };
@@ -8,11 +9,13 @@ use std::net::SocketAddr;
 use crate::config::{Config};
 use std::sync::Arc;
 
+mod webdav;
+
 // "State" refers to any data that needs to stay alive between different requests.
 
 // the handler that lists all the files in the dir and needs the shared config
-async fn list_files_handler(State(config): State<Arc<Config>>) -> String {
-    let storage_path = &config.storage_path;
+async fn list_files_handler(State(state): State<AppState>) -> String {
+    let storage_path = &state.config.storage_path;
 
     match fs::read_dir(storage_path) {
         Ok(entries) => {
@@ -35,19 +38,40 @@ async fn ping_handler() -> &'static str {
     "pong\n" 
 }
 
+// Create a "Container" to hold both the Config and the WebDAV Engine
+#[derive(Clone)]
+struct AppState {
+    config: Arc<Config>,
+    dav_engine: dav_server::DavHandler,
+}
+// The Appstate which i defined is the shared memory of my server
+
 // function that starts the axum server 
-pub async fn start(config: Arc<Config>) {  // needs the config struct which is wrapped inside arc for details 
+pub async fn start(config: Arc<Config>) {  // needs the config struct which is wrapped inside arc for details
+
+    let dav_engine = webdav::create_dav_handler(Arc::clone(&config)); 
+
+    // Create the combined state
+    let state = AppState {
+        config: Arc::clone(&config),
+        dav_engine,
+    };
 
     let app = Router::new()
                 .route("/ping", get(ping_handler))
                 // Register the route and inject the state
                 .route("/files", get(list_files_handler))
-                .with_state(config.clone()); // This is the "Bridge": The creation of the shared state 
-
-    let addr_str = config.get_addr();
-    let addr: SocketAddr = addr_str
-                .parse()
-                .expect("Invalid HOST_ADDR or PORT. Please check your .env file");
+                .route("/", any(webdav::dav_handler)) //root endpoint 
+                // Fallback for the root of the dav drive
+                .route("/dav", any(webdav::dav_handler))
+                // Capture everything starting with /dav/ and send it to the handler
+                .route("/dav/*path", any(webdav::dav_handler))
+                // Catch-all for any other path (e.g., /folder/file.txt)
+                .route("/*path", any(webdav::dav_handler))
+                .with_state(state); // This is the "Bridge": The creation of the shared state
+            
+    // Instead of relying solely on get_addr(), force it to listen to your iPad's network
+    let addr = SocketAddr::from(([0, 0, 0, 0], config.server_port)); 
 
     println!("Oxidrop Gateway is listening on http://{}", addr);
 

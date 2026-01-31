@@ -7,3 +7,10 @@ edition = "2024"
 dotenvy = "0.15"
 tokio = { version = "1.0", features = ["full"] }
 axum = "0.7"
+dav-server = "0.6"
+
+# The glue that connects the WebDAV engine to your Axum router
+tower = "0.4"
+
+# Required for handling HTTP headers and metadata safely in Rust
+headers = "0.4"
