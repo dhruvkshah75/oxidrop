@@ -1,19 +1,7 @@
 use crate::storage;
-use clap::Parser;  // use this to import the env varibles while running the ./oxidrop 
 
 use std::{env, path::PathBuf};
 use dotenvy::dotenv;
-
-#[derive(Parser, Debug)]
-#[command(
-    name = "oxidrop",
-    author = "Dhruv Shah",
-    version = "1.0",
-    about = "Secure WebDAV file synchronization server"
-)]
-pub struct Args {
-    
-}
 
 
 pub struct Config {
