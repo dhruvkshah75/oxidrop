@@ -30,7 +30,7 @@ Oxidrop is a fast, local file server that lets you access your Linux files from 
 
 ### 1. Download & Extract
 
-Download the latest release from [GitHub Releases](https://github.com/yourusername/oxidrop/releases):
+Download the latest release from [GitHub Releases](https://github.com/dhruvkshah75/oxidrop/releases):
 
 ```bash
 tar -xzf oxidrop-linux-x86_64.tar.gz
@@ -40,6 +40,7 @@ cd oxidrop
 ### 2. Run Setup Script
 
 ```bash
+chmod +x setup.sh  # give the permission to execute 
 ./setup.sh
 ```
 
@@ -85,6 +86,7 @@ Download **WebDAV Navigator** from the App Store
    - **URL**: `http://YOUR_IP_ADDRESS:9090` (e.g., `http://192.168.1.100:9090`)
    - **Username**: The username you set during setup
    - **Password**: The password you set during setup
-4. Tap "Save"
+4. **Disable Secure Connection** 
+5. Tap "Save"
 
 
