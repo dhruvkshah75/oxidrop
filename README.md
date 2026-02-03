@@ -26,6 +26,14 @@ Oxidrop is a fast, local file server that lets you access your Linux files from 
 - **Privacy First**: Your files never leave your device
 - **Fast**: Built with Rust for high-performance file streaming
 
+## Demo
+Some screenshots and videos that demonstrate the usage of oxidrop  
+
+<div style="display: flex; justify-content: space-around; align-items: center;">
+  <img src="assets/demo.png" alt="iPad view of dir" width="48%">
+  <img src="assets/demo2.png" alt="Laptop view of dir" width="48%">
+</div>
+
 ## Installation
 
 ### 1. Download & Extract
@@ -58,9 +66,9 @@ This will prompt you for:
 
 ## Connecting from iPad/iPhone
 
-### 1. Install WebDAV Navigator
+### 1. Install WebDAV Nav
 
-Download **WebDAV Navigator** from the App Store
+Download **WebDAV Nav** from the App Store or **OwlFiles** from the playstore
 
 ### 2. Connect to Server
 
