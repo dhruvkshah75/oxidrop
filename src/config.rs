@@ -7,17 +7,12 @@ use dotenvy::dotenv;
 pub struct Config {
     pub storage_path: PathBuf,
     pub server_port: u16,
-    pub host_addr: String,
     pub auth_username: String,
     pub auth_password: String,
 }
 
 // implementation Container of the config Struct 
 impl Config {
-    // gives the address host_adrr:port  ==>> 0.0.0.0:9090
-    pub fn get_addr(&self) -> String {
-        format!("{}:{}", self.host_addr, self.server_port)
-    }
 
     pub fn load() -> Self {
 
@@ -43,14 +38,6 @@ impl Config {
             }
         };
 
-        // load the host address
-        let host_addr = match env::var("HOST_ADDR") {
-            Ok(host_addr) => host_addr,
-            Err(e) =>  {
-                eprintln!("Configuration Error Host Address Missing: {}", e); 
-                std::process::exit(1);
-            }
-        };
 
         // load the auth_username => required 
         let auth_username = match env::var("AUTH_USERNAME") {
@@ -83,7 +70,6 @@ impl Config {
         Self {
             storage_path,
             server_port,
-            host_addr,
             auth_username,
             auth_password
         }

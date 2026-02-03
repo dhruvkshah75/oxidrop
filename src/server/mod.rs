@@ -61,10 +61,10 @@ pub async fn start(config: Arc<Config>) {  // needs the config struct which is w
     let state_for_auth = state.clone();
 
     let app = Router::new()
+                .route("/", any(webdav::dav_handler)) //root endpoint 
                 .route("/ping", get(ping_handler))
                 // Register the route and inject the state
                 .route("/files", get(list_files_handler))
-                .route("/", any(webdav::dav_handler)) //root endpoint 
                 // Fallback for the root of the dav drive
                 .route("/dav", any(webdav::dav_handler))
                 // Capture everything starting with /dav/ and send it to the handler
@@ -77,8 +77,6 @@ pub async fn start(config: Arc<Config>) {  // needs the config struct which is w
 
     // Instead of relying solely on get_addr(), force it to listen to your iPad's network
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server_port)); 
-
-    println!("Oxidrop Gateway is listening on http://{}", addr);
 
     // Create a tcp listener using tokio's async networking 
     let listner = tokio::net::TcpListener::bind(addr)
