@@ -27,14 +27,6 @@ Oxidrop is a fast, local file server that lets you access your Linux files from 
 - **Fast**: Built with Rust for high-performance file streaming
 
 ## Demo
-Some screenshots and videos that demonstrate the usage of oxidrop  
-
-| iPad View | Laptop View |
-| :---: | :---: |
-| <img src="assets/demo.png" width="100%"> | <img src="assets/demo2.png" width="100%"> |
-
-<br>
-
 ![DemoRecording](./assets/output.gif)
 ## Installation
 
