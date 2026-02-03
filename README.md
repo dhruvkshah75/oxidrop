@@ -44,6 +44,9 @@ cd oxidrop
 ```bash
 chmod +x setup.sh  # give the permission to execute 
 ./setup.sh
+
+# change the port depeneding on the port that u set 
+sudo ufw allow 8080/tcp # allow traffic on port 8080 
 ```
 
 This will prompt you for:
