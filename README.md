@@ -29,11 +29,13 @@ Oxidrop is a fast, local file server that lets you access your Linux files from 
 ## Demo
 Some screenshots and videos that demonstrate the usage of oxidrop  
 
-<div style="display: flex; justify-content: space-around; align-items: center;">
-  <img src="assets/demo.png" alt="iPad view of dir" width="48%">
-  <img src="assets/demo2.png" alt="Laptop view of dir" width="48%">
-</div>
+| iPad View | Laptop View |
+| :---: | :---: |
+| <img src="assets/demo.png" width="100%"> | <img src="assets/demo2.png" width="100%"> |
 
+<br>
+
+![DemoRecording](./assets/output.gif)
 ## Installation
 
 ### 1. Download & Extract
