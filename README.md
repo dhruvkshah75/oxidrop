@@ -8,11 +8,19 @@
     <b>Bridging the Gap Between Your Desk and Your Devices</b>
   </p>
 
-![Rust Version](https://img.shields.io/badge/rust-1.75+-E32F26.svg?style=flat&logo=rust&logoColor=white)
-![Axum](https://img.shields.io/badge/axum-v0.7-blueviolet.svg?style=flat)
-![Tokio](https://img.shields.io/badge/tokio-v1.36-00ADD8.svg?style=flat)
-![Status](https://img.shields.io/badge/status-active-success.svg?style=flat)
-![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)
+<a href="https://www.rust-lang.org/">
+  <img src="https://img.shields.io/badge/Language-Rust-A72145?style=flat&logo=rust&logoColor=white" alt="Written in Rust">
+</a>
+  <img src="https://img.shields.io/badge/status-active-success?style=flat" alt="Status Active">
+  <img alt="issues" src="https://img.shields.io/github/issues/dhruvkshah75/oxidrop" >
+  <img alt="license" src="https://img.shields.io/github/license/dhruvkshah75/oxidrop">
+  <img alt="version" src="https://img.shields.io/github/v/release/dhruvkshah75/oxidrop">
+<br>
+<br>
+<p>
+        <a href="https://www.producthunt.com/posts/oxidrop" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=288767&theme=dark" alt="Oxidrop-Blazing fast wireless file sync | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+  </p>
+  <br>
 </div>
 
 ## What is Oxidrop?
