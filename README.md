@@ -8,17 +8,19 @@
     <b>Bridging the Gap Between Your Desk and Your Devices</b>
   </p>
 
-<a href="https://www.rust-lang.org/">
-  <img src="https://img.shields.io/badge/Language-Rust-A72145?style=flat&logo=rust&logoColor=white" alt="Written in Rust">
-</a>
-  <img src="https://img.shields.io/badge/status-active-success?style=flat" alt="Status Active">
-  <img alt="issues" src="https://img.shields.io/github/issues/dhruvkshah75/oxidrop" >
-  <img alt="license" src="https://img.shields.io/github/license/dhruvkshah75/oxidrop">
-  <img alt="version" src="https://img.shields.io/github/v/release/dhruvkshah75/oxidrop">
-<br>
-<br>
-<p>
-        <a href="https://www.producthunt.com/posts/oxidrop" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=288767&theme=dark" alt="Oxidrop-Blazing fast wireless file sync | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+  <a href="https://www.rust-lang.org/">
+    <img src="https://img.shields.io/badge/Language-Rust-A72145?style=flat&logo=rust&logoColor=white" alt="Written in Rust">
+  </a>
+    <img src="https://img.shields.io/badge/status-active-success?style=flat" alt="Status Active">
+    <img alt="issues" src="https://img.shields.io/github/issues/dhruvkshah75/oxidrop" >
+    <img alt="license" src="https://img.shields.io/github/license/dhruvkshah75/oxidrop">
+  <a href="https://github.com/dhruvkshah75/oxidrop/releases/tag/v1.0.1">
+    <img alt="version" src="https://img.shields.io/github/v/release/dhruvkshah75/oxidrop">
+  </a>
+  <br>
+  <br>
+  <p>
+      <a href="https://www.producthunt.com/posts/oxidrop" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=288767&theme=dark" alt="Oxidrop-Blazing fast wireless file sync | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
   </p>
   <br>
 </div>
@@ -33,6 +35,13 @@ Oxidrop is a fast, local file server that lets you access your Linux files from 
 - **Network Freedom**: Works over WiFi, mobile hotspot, or any local network
 - **Privacy First**: Your files never leave your device
 - **Fast**: Built with Rust for high-performance file streaming
+
+## Table of Contents
+
+- [Demo](#demo)
+- [Installation](#installation)
+- [Connecting](#connecting)
+
 
 ## Demo
 ![DemoRecording](./assets/output.gif)
@@ -69,9 +78,9 @@ This will prompt you for:
 ./oxidrop
 ```
 
-## Connecting from iPad/iPhone
-
-### 1. Install WebDAV Nav
+## Connecting
+How to connect mobile device like iPad, iPhone, Android devices to the server 
+### 1. Install WebDAV Nav or OwlFiles
 
 Download **WebDAV Nav** from the App Store or **OwlFiles** from the playstore
 
