@@ -20,7 +20,9 @@
   <br>
   <br>
   <p>
-      <a href="https://www.producthunt.com/posts/oxidrop" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=288767&theme=dark" alt="Oxidrop-Blazing fast wireless file sync | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+  <a href="https://www.producthunt.com/products/oxidrop?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-oxidrop" target="_blank" rel="noopener noreferrer">
+    <img alt="Oxidrop - Blazing-fast wireless sync for Linux and mobile files. | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1073921&amp;theme=dark&amp;t=1770291300020">
+  </a>
   </p>
   <br>
 </div>
