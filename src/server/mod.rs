@@ -9,6 +9,7 @@ use std::fs;
 use std::net::SocketAddr;
 use crate::config::{Config};
 use std::sync::Arc;
+use tracing::{info, error, debug}; //
 
 mod webdav;
 
@@ -17,6 +18,7 @@ mod webdav;
 // the handler that lists all the files in the dir and needs the shared config
 async fn list_files_handler(State(state): State<AppState>) -> String {
     let storage_path = &state.config.storage_path;
+    debug!("Accessing storage path for file listing: {:?}", storage_path); //
 
     match fs::read_dir(storage_path) {
         Ok(entries) => {
@@ -29,13 +31,17 @@ async fn list_files_handler(State(state): State<AppState>) -> String {
             }
             files
         },
-        Err(_) => "Error: Could not access storage folder.".to_string(),
+        Err(e) => {
+            error!("Read directory error: {}", e); //
+            "Error: Could not access storage folder.".to_string()
+        },
     }
 }
 
 
 // we can send a ping request to check if the server is live or not 
 async fn ping_handler() -> &'static str {
+    debug!("Ping handler triggered"); //
     "pong\n" 
 }
 
@@ -79,14 +85,22 @@ pub async fn start(config: Arc<Config>) {  // needs the config struct which is w
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server_port)); 
 
     // Create a tcp listener using tokio's async networking 
-    let listner = tokio::net::TcpListener::bind(addr)
+    let listener = tokio::net::TcpListener::bind(addr)
                 .await
-                .expect("Could not bind to port. Is it already in use?");
+                .unwrap_or_else(|e| {
+                    error!("Binding error on port {}: {}", config.server_port, e); 
+                    std::process::exit(1);
+                });
+
+    info!("WebDAV server started on {}", addr); 
 
     // Start the axum server 
     // This process will run untill stopped 
-    axum::serve(listner, app) 
+    axum::serve(listener, app) 
                 .await
-                .expect("Server encountered a critical error");
+                .unwrap_or_else(|e| {
+                    error!("Critical server error: {}", e); //
+                    std::process::exit(1);
+                });
 
 }

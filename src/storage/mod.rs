@@ -1,6 +1,6 @@
 use std::{env, fs};
 use std::path::{Path, PathBuf};
-
+use tracing::{info, warn, error};
 
 pub fn init() -> Result<PathBuf, String>{
     // check if storage path exists or not
@@ -11,21 +11,27 @@ pub fn init() -> Result<PathBuf, String>{
             let path = Path::new(&path_str);
 
             if !path.exists() {
-                println!("Storage Path does not exist. Creating {}", path_str);
+                warn!("Storage Path does not exist. Creating {}", path_str);
 
                 if let Err(e) = fs::create_dir(path) {
                     // return Error string when path couldnt be created 
-                    return Err(format!("Failed to create storage directory: {}", e));
+                    let err_msg = format!("Failed to create storage directory: {}", e);
+                    error!("{}", err_msg); // Use error! for failures
+                    return Err(err_msg);
                 }
             }
             else {
-                println!("Storage path verified");
+                info!("Storage path verified");
             }
 
             // success then return the pathBuf
             Ok(path.to_path_buf())
         }
-        Err(e) => Err(format!("Could not resolve the Storage Path issue: {}", e)),
+        Err(e) => {
+            let err_msg = format!("Could not resolve the Storage Path issue: {}", e);
+            error!("{}", err_msg);
+            Err(err_msg)
+        }
     };
 
     storage_path
