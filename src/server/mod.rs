@@ -5,6 +5,7 @@ use axum::{
     extract::State
 };
 use tower_http::validate_request::ValidateRequestHeaderLayer;
+use tower_http::trace::TraceLayer;
 use std::fs;
 use std::net::SocketAddr;
 use crate::config::{Config};
@@ -78,6 +79,7 @@ pub async fn start(config: Arc<Config>) {  // needs the config struct which is w
                 // Catch-all for any other path (e.g., /folder/file.txt)
                 .route("/*path", any(webdav::dav_handler))
                 .with_state(state) // This is the "Bridge": The creation of the shared state
+                .layer(TraceLayer::new_for_http())
                 .layer(ValidateRequestHeaderLayer::basic(&state_for_auth.config.auth_username, 
                                                          &state_for_auth.config.auth_password));
 

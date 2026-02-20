@@ -11,7 +11,7 @@ dav-server = "0.6"
 
 # The glue that connects the WebDAV engine to your Axum router
 tower = "0.4"
-tower-http = { version = "0.5", features = ["auth"] }
+tower-http = { version = "0.5", features = ["auth", "trace"] }
 
 # Required for handling HTTP headers and metadata safely in Rust
 headers = "0.4"
@@ -19,5 +19,5 @@ headers = "0.4"
 # for setting up mDNS for this server 
 mdns-sd = "0.17"
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 

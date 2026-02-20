@@ -1,7 +1,7 @@
 use crate::config::Config;
 use std::sync::Arc;
-use tracing::{info, Level};
-use tracing_subscriber;
+use tracing::info;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod config;
 mod storage;
@@ -12,9 +12,13 @@ mod dns;
 
 #[tokio::main]
 async fn main() {
-    // Initialize logging
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
+    // Initialize logging with tower_http traces enabled
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "oxidrop=info,tower_http=trace,tower_http::trace=trace".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
         .init();
 
     let name = String::from("oxidrop");
