@@ -113,7 +113,6 @@ type serverEvent struct {
 	Event    string `json:"event"`
 	URL      string `json:"url"`
 	Username string `json:"username"`
-	Password string `json:"password"`
 	Message  string `json:"message"`
 }
 
@@ -159,7 +158,9 @@ func runServer(ctx context.Context, cfg settings, elevated bool, events chan<- t
 	err = runCommand(ctx, "", args, func(line string) {
 		var event serverEvent
 		if json.Unmarshal([]byte(line), &event) == nil && (event.Event == "ready" || event.Event == "error" || event.Event == "privilege_required") {
-			publish(ctx, events, event)
+			if event.Event != "privilege_required" || elevated {
+				publish(ctx, events, event)
+			}
 		} else {
 			publish(ctx, events, serverLog(line))
 		}

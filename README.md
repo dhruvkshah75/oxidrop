@@ -59,9 +59,9 @@ Clipboard import uses `wl-paste` from `wl-clipboard` on Wayland or `xclip` on X1
 
 1. Put both devices on the same Wi-Fi network or connect them via a hotspot. The network must permit TCP 445 for SMB and local multicast for Bonjour discovery.
 2. Launch `oxidrop-tui` as your regular Linux user. The TUI opens first and launches the compiled Rust backend. Approve the sudo prompt when asked to start its Samba instance.
-3. Wait for **ONLINE**, then press **Alt+L** to see the session username and password. Each managed session generates a new password.
+3. Wait for **ONLINE**, then press **Alt+L** to confirm your Samba username. Use the Samba password you set for that account. If you have not set one, run `sudo smbpasswd -a "$(id -un)"` once and reopen the TUI.
 4. In **Files → Browse → … → Connect to Server**, enter `smb://oxidrop.local`. If the hostname fails, try `smb://LAN_IP` using the address in the TUI header.
-5. Choose **Registered User**, enter the session credentials, then open the **oxidrop** share. Paste or create files inside that share.
+5. Choose **Registered User**, enter your Samba username and password, then open the **oxidrop** share. Paste or create files inside that share.
 
 The TUI owns the backend it starts. **Alt+Q** or **Ctrl+C** stops the managed Samba instance and withdraws its Bonjour announcement. Cargo runs only to build the backend when needed. If system Samba already owns TCP 445, the TUI cannot start a managed session.
 
@@ -85,7 +85,7 @@ The left pane starts in the directory you launch from. The right pane displays t
 | Ctrl+N / Alt+N, Ctrl+F | Create a folder or an empty file. |
 | Delete / Alt+D | Request deletion. Confirm with Alt+Y or cancel with Alt+N or Esc. |
 | Alt+R | Refresh both panes and rerun active searches. |
-| Alt+L | Open server logs, transfer error details, and session credentials. |
+| Alt+L | Open server logs, transfer error details, and the Samba username. |
 | F1 / Alt+H | Open keyboard help. |
 | Alt+Q / Ctrl+C | Quit and end the managed SMB session. |
 
@@ -114,7 +114,7 @@ Both keys are optional. The share defaults to `~/oxidrop-share` and is created i
 sudo ./target/release/oxidrop --smb --share-dir "$HOME/oxidrop-share"
 ```
 
-The standalone server prints session credentials and serves a writable `[oxidrop]` share with SMB2/SMB3 and Apple VFS support. It creates a private Samba configuration and runtime data for the session and advertises the share via Bonjour. SIGINT or SIGTERM stops managed Samba and removes the advertisement. `--managed-smb` requires an available port 445 and refuses to reuse an existing service. `--quiet` emits JSON lifecycle events for supervising programs.
+The standalone server reuses the local Samba account database (`tdbsam`) configured in `/etc/samba/smb.conf` and serves a writable `[oxidrop]` share with SMB2/SMB3 and Apple VFS support. It creates a private Samba configuration and runtime data for the session and advertises the share via Bonjour. Your Samba password stays the same across sessions. To change it, run `sudo smbpasswd -a "$(id -un)"` and reconnect from your device. Oxidrop does not display or log the password. SIGINT or SIGTERM stops managed Samba and removes the advertisement. `--managed-smb` requires an available port 445 and refuses to reuse an existing service. `--quiet` emits JSON lifecycle events for supervising programs.
 
 ### Reuse an existing system Samba service
 
@@ -167,7 +167,3 @@ cargo test --locked smb_service_resolves_and_unregisters -- --ignored
 ```
 
 The Bonjour integration test requires multicast access. The TUI tests exercise transfers, collision handling, live refresh, recursive search, clipboard import, pane layout, and mouse targets.
-
-## Original WebDAV demo
-
-![Original WebDAV workflow](assets/output.gif)

@@ -160,11 +160,11 @@ func TestShareWatchAndView(t *testing.T) {
 		checkDimensions(t, m, view)
 
 		m.showLogs = true
-		m.ready = serverEvent{Username: "example", Password: "session-test"}
+		m.ready = serverEvent{Username: "example"}
 		m.addLog("server started")
 		m.resizeLog()
 		view = m.View()
-		if !strings.Contains(view, "session-test") || !strings.Contains(view, "server started") {
+		if !strings.Contains(view, "Use your existing Samba password") || !strings.Contains(view, "server started") {
 			t.Fatal(view)
 		}
 		checkDimensions(t, m, view)

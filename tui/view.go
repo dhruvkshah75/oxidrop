@@ -351,7 +351,7 @@ func (m *model) renderLogs(width, height int) string {
 	if m.ready.Username != "" {
 		rows = append(rows,
 			row(textStyle.Background(elevated), cw, "Registered User  "+display(m.ready.Username)),
-			row(textStyle.Background(elevated), cw, "Session password "+display(m.ready.Password)),
+			row(textStyle.Background(elevated), cw, "Use your existing Samba password"),
 		)
 	}
 	rows = append(rows, m.logView.View())

@@ -1,17 +1,15 @@
 use crate::{Result, Shutdown, config, dns, storage};
 use std::{
     env, fs,
-    io::{self, Read, Write},
+    io::{self, Write},
     os::unix::{
         fs::{DirBuilderExt, OpenOptionsExt},
         process::CommandExt,
     },
     path::{Path, PathBuf},
-    process::Stdio,
     time::Duration,
 };
 use tokio::{
-    io::AsyncWriteExt,
     net::TcpStream,
     process::{Child, Command},
     time,
@@ -93,14 +91,14 @@ struct Files {
 }
 
 impl Files {
-    fn create(path: &Path, account: &str) -> Result<Self> {
+    fn create(path: &Path, account: &str, identity: &SambaIdentity) -> Result<Self> {
         let runtime = PathBuf::from(format!("/tmp/oxidrop-smb-{}", std::process::id()));
         fs::DirBuilder::new().mode(0o700).create(&runtime)?;
         let mut files = Self {
             runtime,
             owns_config: false,
         };
-        let config = standalone_config(path, &files.runtime, account)?;
+        let config = standalone_config(path, &files.runtime, account, identity)?;
         let mut file = fs::OpenOptions::new().write(true).create_new(true)
             .mode(0o600).open(CONFIG)
             .map_err(|error| format!("Cannot claim {CONFIG}: {error}. Check whether another oxidrop instance is running."))?;
@@ -119,7 +117,12 @@ impl Drop for Files {
     }
 }
 
-fn standalone_config(path: &Path, runtime: &Path, account: &str) -> Result<String> {
+fn standalone_config(
+    path: &Path,
+    runtime: &Path,
+    account: &str,
+    identity: &SambaIdentity,
+) -> Result<String> {
     let path = path.to_str().ok_or("Samba requires a UTF-8 share path")?;
     if path.contains(['\n', '\r', '\0', '%']) || path.ends_with('\\') || path.trim_end() != path {
         return Err(
@@ -128,10 +131,15 @@ fn standalone_config(path: &Path, runtime: &Path, account: &str) -> Result<Strin
         );
     }
     let runtime = runtime.display();
+    let SambaIdentity {
+        private_dir,
+        netbios_name,
+        passdb,
+    } = identity;
     Ok(format!(
         "[global]
     server role = standalone server
-    netbios name = OXIDROP
+    netbios name = {netbios_name}
     smb ports = 445
     server min protocol = SMB2_02
     vfs objects = fruit streams_xattr
@@ -142,14 +150,14 @@ fn standalone_config(path: &Path, runtime: &Path, account: &str) -> Result<Strin
     load printers = no
     disable spoolss = yes
     usershare max shares = 0
-    private dir = {runtime}
+    private dir = {private_dir}
     state directory = {runtime}
     cache directory = {runtime}
     lock directory = {runtime}
     pid directory = {runtime}
     ncalrpc dir = {runtime}/ncalrpc
     log file = {runtime}/smbd.log
-    passdb backend = tdbsam
+    passdb backend = {passdb}
 
 [oxidrop]
     path = {path}
@@ -165,25 +173,59 @@ fn standalone_config(path: &Path, runtime: &Path, account: &str) -> Result<Strin
     ))
 }
 
-async fn provision_user(account: &str) -> Result<String> {
-    let mut random = [0; 16];
-    fs::File::open("/dev/urandom")?.read_exact(&mut random)?;
-    let password: String = random.iter().map(|byte| format!("{byte:02x}")).collect();
-    let mut command = Command::new("smbpasswd")
-        .args(["-c", CONFIG, "-s", "-a", account])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .kill_on_drop(true)
-        .spawn()?;
-    if let Some(mut input) = command.stdin.take() {
-        input
-            .write_all(format!("{password}\n{password}\n").as_bytes())
+struct SambaIdentity {
+    private_dir: String,
+    netbios_name: String,
+    passdb: String,
+}
+
+impl SambaIdentity {
+    async fn load(account: &str) -> Result<Self> {
+        let private_dir = parameter("global", "private dir").await?;
+        let netbios_name = parameter("global", "netbios name").await?;
+        let passdb = parameter("global", "passdb backend").await?;
+        let identity = Self {
+            private_dir,
+            netbios_name,
+            passdb,
+        };
+        identity.validate()?;
+
+        let output = Command::new("pdbedit")
+            .args(["-s", SYSTEM_CONFIG, "-L", "-u", account])
+            .kill_on_drop(true)
+            .output()
             .await?;
+        if !output.status.success()
+            || !String::from_utf8_lossy(&output.stdout).lines().any(|line| {
+                line.split_once(':')
+                    .is_some_and(|(name, _)| name == account)
+            })
+        {
+            return Err(format!("Set your Samba password once with sudo smbpasswd -a {account}, then reopen Oxidrop.").into());
+        }
+        Ok(identity)
     }
-    if !command.wait().await?.success() {
-        return Err("smbpasswd could not initialize the standalone account".into());
+
+    fn validate(&self) -> Result<()> {
+        let safe_path = |value: &str| {
+            Path::new(value).is_absolute()
+                && !value.contains(['\n', '\r', '\0', '%'])
+                && !value.ends_with('\\')
+                && value.trim_end() == value
+        };
+        if !safe_path(&self.private_dir)
+            || !(self.passdb == "tdbsam"
+                || self.passdb.strip_prefix("tdbsam:").is_some_and(safe_path))
+            || !self
+                .netbios_name
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"_-".contains(&c))
+        {
+            return Err("Managed Oxidrop requires a local Samba tdbsam account database and a standard NetBIOS name in /etc/samba/smb.conf".into());
+        }
+        Ok(())
     }
-    Ok(password)
 }
 
 async fn parameter(section: &str, name: &str) -> Result<String> {
@@ -308,12 +350,12 @@ pub async fn run(args: config::Args, shutdown: &mut Shutdown) -> Result<()> {
     let account = Account::from_sudo().await?;
     let path = storage::share_path(args.share_dir, Some(account.home.clone()))?;
     let path = account.prepare_share(&path).await?;
-    let files = Files::create(&path, &account.name)?;
-    let password = tokio::select! {
+    let identity = tokio::select! {
         biased;
         _ = shutdown.wait() => return Ok(()),
-        result = provision_user(&account.name) => result?,
+        result = SambaIdentity::load(&account.name) => result?,
     };
+    let files = Files::create(&path, &account.name, &identity)?;
     let mut command = std::process::Command::new("smbd");
     command
         .args(["-F", "--no-process-group", "-s", CONFIG])
@@ -337,7 +379,7 @@ pub async fn run(args: config::Args, shutdown: &mut Shutdown) -> Result<()> {
             status = child.wait() => return Err(format!("smbd exited before it was ready: {}", status?).into()),
             result = time::timeout(Duration::from_secs(8), ready) => result.map_err(|_| "smbd did not open TCP 445")?,
         }
-        advertise(&path, args.quiet, Some((&account.name, &password)), Some(&mut child), shutdown).await
+        advertise(&path, args.quiet, Some(&account.name), Some(&mut child), shutdown).await
     }.await;
     stop_child(&mut child, pid).await;
     if result.is_err()
@@ -360,27 +402,25 @@ pub async fn run(args: config::Args, shutdown: &mut Shutdown) -> Result<()> {
 async fn advertise(
     path: &Path,
     quiet: bool,
-    credentials: Option<(&str, &str)>,
+    username: Option<&str>,
     child: Option<&mut Child>,
     shutdown: &mut Shutdown,
 ) -> Result<()> {
     let mdns = dns::Advertisement::start("_smb._tcp.local.", PORT)?;
     let url = "smb://oxidrop.local";
     let announcement = if quiet {
-        let (username, password) = credentials.unzip();
         serde_json::json!({
             "event": "ready",
             "url": url,
             "share_dir": path.to_string_lossy(),
             "username": username,
-            "password": password,
         })
         .to_string()
     } else {
         let mut message = format!("SMB share is ready at {url} (oxidrop): {}", path.display());
-        if let Some((username, password)) = credentials {
+        if let Some(username) = username {
             message.push_str(&format!(
-                "\nRegistered User: {username}\nSession password: {password}"
+                "\nRegistered User: {username} (use your Samba password)"
             ));
         }
         message
@@ -415,11 +455,22 @@ mod tests {
     #[test]
     fn standalone_config_keeps_share_paths_literal() {
         let runtime = Path::new("/tmp/test");
-        let config = standalone_config(Path::new("/home/me/my share"), runtime, "me").unwrap();
+        let identity = SambaIdentity {
+            private_dir: "/var/lib/samba/private".into(),
+            netbios_name: "HOST".into(),
+            passdb: "tdbsam".into(),
+        };
+        identity.validate().unwrap();
+        let config =
+            standalone_config(Path::new("/home/me/my share"), runtime, "me", &identity).unwrap();
+        assert!(config.contains("private dir = /var/lib/samba/private\n"));
+        assert!(config.contains("netbios name = HOST\n"));
+        assert!(config.contains("passdb backend = tdbsam\n"));
+        assert!(config.contains("state directory = /tmp/test\n"));
         assert!(config.contains("path = /home/me/my share\n"));
         assert!(config.contains("fruit:nfs_aces = no"));
         for unsafe_path in ["/tmp/a\n[share]", "/tmp/a%", "/tmp/a\\", "/tmp/a "] {
-            assert!(standalone_config(Path::new(unsafe_path), runtime, "me").is_err());
+            assert!(standalone_config(Path::new(unsafe_path), runtime, "me", &identity).is_err());
         }
     }
 }

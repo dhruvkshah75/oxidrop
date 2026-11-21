@@ -235,6 +235,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.addLog(string(msg))
 		cmd = m.nextEvent()
 	case sudoNeeded:
+		m.addLog("Requesting sudo authorization for managed Samba")
 		m.status = "AUTHORIZING"
 		m.message = ""
 		cmd = tea.Batch(m.nextEvent(), tea.ExecProcess(exec.Command("sudo", "-v"), func(err error) tea.Msg { return sudoResult{err} }))
