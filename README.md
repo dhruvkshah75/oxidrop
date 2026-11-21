@@ -41,15 +41,17 @@ Oxidrop shares files between a Linux computer and nearby devices over a local ne
 
 ## Build and install
 
-Use Linux, a current stable Rust toolchain with Cargo, Go 1.25 or newer, and Make. Install Samba with its `fruit` and `streams_xattr` VFS modules. On Debian and Ubuntu:
+Use Linux, Git, a current stable Rust toolchain with Cargo, Go 1.25 or newer, and Make. Install Samba with its `fruit` and `streams_xattr` VFS modules. On Debian and Ubuntu, install those modules with `sudo apt install samba samba-vfs-modules`.
+
+To download the installer and build and install both executables from the latest `main` branch:
 
 ```sh
-sudo apt install samba samba-vfs-modules
-make build
-./target/release/oxidrop-tui
+curl -fsSLO https://raw.githubusercontent.com/dhruvkshah75/oxidrop/main/install.sh && sh install.sh
 ```
 
-`make build` invokes Cargo and Go through their incremental build caches. It produces `target/release/oxidrop` and `target/release/oxidrop-tui`. Run `make install-user` to install both in `~/.local/bin`, or run `sudo make install` after building to install both in `/usr/local/bin`. Once the destination is on your `PATH`, run `oxidrop-tui` from any directory.
+The installer builds from source and installs `oxidrop` and `oxidrop-tui` in `~/.local/bin`. Ensure this directory is on your `PATH`, then run `oxidrop-tui`. To uninstall, remove those two files from `~/.local/bin`.
+
+From a checkout, run `make build` to produce `target/release/oxidrop` and `target/release/oxidrop-tui`. Run `make install-user` to install both in `~/.local/bin`, or `sudo make install` after building to install them in `/usr/local/bin`.
 
 Clipboard import uses `wl-paste` from `wl-clipboard` on Wayland or `xclip` on X11. Opening regular files uses `xdg-open`.
 
@@ -136,14 +138,23 @@ Use the system Samba account password. To set one, run `sudo smbpasswd -a alex`,
 
 ### WebDAV
 
-Run `oxidrop` without an SMB flag. Run `./setup.sh` to create `.env`, or set `AUTH_USERNAME`, `AUTH_PASSWORD`, `STORAGE_PATH`, and `PORT` through your environment. The setup script defaults to port 9090. The backend defaults to 8080 if `PORT` is absent. `--share-dir PATH` overrides `STORAGE_PATH`. Without either, the server uses `~/oxidrop-share`.
+WebDAV is an alternative to SMB and runs without the TUI. From a repository checkout, create its configuration and start the server:
 
-Connect using a WebDAV client and the configured credentials at `http://oxidrop.local:PORT/` or `http://LAN_IP:PORT/`. This endpoint uses HTTP Basic authentication without TLS, so use it on a trusted local network. WebDAV credentials are separate from Samba credentials.
+```sh
+./setup.sh
+cargo run
+```
+
+The setup script prompts for a port (default `8080`), storage directory, username and password. It creates a private `.env` in the current directory and will not overwrite an existing one. Run the server from that directory so it can find the file. If you installed the binaries, run `oxidrop` instead of `cargo run`.
+
+You can also set `AUTH_USERNAME` and `AUTH_PASSWORD` in your environment or edit `.env` yourself (see `.env.example`). `STORAGE_PATH` and `PORT` are optional; they default to `~/oxidrop-share` and `8080`. `--share-dir PATH` overrides `STORAGE_PATH`.
+
+Connect a WebDAV client, such as OwlFiles, to `http://LAN_IP:PORT/` using the configured WebDAV username and password. You can also try `http://oxidrop.local:PORT/` if your client resolves Bonjour. WebDAV credentials are separate from Samba credentials. The endpoint uses HTTP Basic authentication without TLS, so use it on a trusted local network.
 
 ## Troubleshooting
 
 - **OFFLINE or TCP 445 already in use.** Press Alt+L for diagnostics. If system Samba is using the port and you can pause its other shares, run `sudo systemctl stop smbd` and reopen the TUI. The managed TUI session needs its own listener.
-- **Invalid username or password.** Choose **Registered User** and use the credentials for the current Samba mode. For a managed session, use the current credentials under Alt+L.
+- **Invalid username or password.** Choose **Registered User** and use the credentials for the current Samba mode. Alt+L shows the managed session username. Use the password set with `smbpasswd`, then eject any old connection in Files and reconnect if it saved a previous password.
 - **Read Only in Files.** Open the **oxidrop** share itself before pasting. The server-level screen lists shares. For system Samba, use `testparm -s` to check `read only = no`, confirm that the authenticated Linux user can write to the backing directory, and reconnect after changing the configuration.
 - **Input/output error after login.** Check the Samba service journal, Samba logs, and any matching AppArmor denials before changing permissions.
 
