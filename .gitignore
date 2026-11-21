@@ -4,8 +4,8 @@ ROADMAP.md
 # the main storage file 
 oxidropStorage/
 
-.cargo
-
+.cargo/
 note.md
+docs/
 
 oxidrop-linux-x86_64.tar.gz
