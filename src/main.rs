@@ -1,43 +1,111 @@
-use crate::config::Config;
-use std::sync::Arc;
-use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use std::{error::Error, process::ExitCode, sync::Arc};
+use tokio::{
+    io::AsyncReadExt,
+    net::UnixStream,
+    signal::unix::{Signal, SignalKind, signal},
+};
 
 mod config;
-mod storage;
-mod server;
 mod dns;
+mod server;
+mod smb;
+mod storage;
 
-// we need to allow shared ownership of the config struct so that multiple handlers can use it 
+type Result<T> = std::result::Result<T, Box<dyn Error>>;
+
+struct Shutdown {
+    interrupt: Signal,
+    terminate: Signal,
+    supervisor: Option<UnixStream>,
+}
+
+impl Shutdown {
+    async fn wait(&mut self) {
+        tokio::select! {
+            _ = self.interrupt.recv() => {}
+            _ = self.terminate.recv() => {}
+            _ = async {
+                if let Some(socket) = self.supervisor.as_mut() {
+                    let _ = socket.read(&mut [0]).await;
+                } else {
+                    std::future::pending::<()>().await;
+                }
+            } => {}
+        }
+    }
+}
 
 #[tokio::main]
-async fn main() {
-    // Initialize logging with tower_http traces enabled
-    tracing_subscriber::registry()
-        .with(
+async fn main() -> ExitCode {
+    let args = match config::Args::parse() {
+        Ok(Some(args)) => args,
+        Ok(None) => {
+            println!("Usage: oxidrop [--share-dir PATH] [--smb] [--quiet]");
+            return ExitCode::SUCCESS;
+        }
+        Err(error) => {
+            eprintln!("{error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .with_ansi(!args.quiet)
+        .with_env_filter(if args.quiet {
+            "off".into()
+        } else {
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "oxidrop=info,tower_http=trace,tower_http::trace=trace".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
+                .unwrap_or_else(|_| "oxidrop=info,tower_http=trace".into())
+        })
         .init();
 
-    let name = String::from("oxidrop");
-    info!("Welcome to {}", name);
+    let quiet = args.quiet;
+    match run(args).await {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            let needs_root = error.downcast_ref::<smb::NeedsRoot>().is_some();
+            if quiet {
+                eprintln!(
+                    "{}",
+                    serde_json::json!({
+                        "event": if needs_root { "privilege_required" } else { "error" },
+                        "message": error.to_string(),
+                    })
+                );
+            } else {
+                eprintln!("{error}");
+            }
+            ExitCode::from(if needs_root { 77 } else { 1 })
+        }
+    }
+}
 
-    let version = String::from("1.0.0");
-    info!("{} version {}", name, version);
+async fn run(args: config::Args) -> Result<()> {
+    let mut shutdown = Shutdown {
+        interrupt: signal(SignalKind::interrupt())?,
+        terminate: signal(SignalKind::terminate())?,
+        supervisor: match args.supervisor_socket.as_ref() {
+            Some(path) => Some(UnixStream::connect(path).await?),
+            None => None,
+        },
+    };
+    if args.smb {
+        return smb::run(args, &mut shutdown).await;
+    }
 
-    // calling the storage init function
-    let config = Config::load();
-
-    info!("mDNS active: Connect at http://oxidrop.local:{}", config.server_port);
-    info!("Storage initialized at: {:?}", config.storage_path);
-
-    let _mdns_handle = dns::start_responder(config.server_port);
-    
-    // Wrap the config in an arc to allow multiple handlers to use it 
-    let shared_config = Arc::new(config);  // beyond this config cannot be used: Rust Ownership model
-
-    server::start(shared_config).await;
-
+    let config = Arc::new(config::Config::load(args.share_dir)?);
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", config.server_port)).await?;
+    let port = listener.local_addr()?.port();
+    let mdns = dns::Advertisement::start("_http._tcp.local.", port)?;
+    if args.quiet {
+        println!(
+            "{}",
+            serde_json::json!({"event": "ready", "url": format!("http://oxidrop.local:{port}"), "share_dir": config.storage_path.to_string_lossy()})
+        );
+    } else {
+        tracing::info!("WebDAV listening at http://oxidrop.local:{port}");
+    }
+    let result = server::start(config, listener, async move { shutdown.wait().await }).await;
+    mdns.stop().await;
+    Ok(result?)
 }

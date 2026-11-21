@@ -1,40 +1,12 @@
-use std::{env, fs};
-use std::path::{Path, PathBuf};
-use tracing::{info, warn, error};
+use std::{fs, io, path::PathBuf};
 
-pub fn init() -> Result<PathBuf, String>{
-    // check if storage path exists or not
-    // here the storage_path is either a pathBuf or a string i.e. error 
-    let storage_path = match env::var("STORAGE_PATH") {
-        Ok(path_str) => {
-            // takes the path_str and tranforms it into a path
-            let path = Path::new(&path_str);
-
-            if !path.exists() {
-                warn!("Storage Path does not exist. Creating {}", path_str);
-
-                if let Err(e) = fs::create_dir(path) {
-                    // return Error string when path couldnt be created 
-                    let err_msg = format!("Failed to create storage directory: {}", e);
-                    error!("{}", err_msg); // Use error! for failures
-                    return Err(err_msg);
-                }
-            }
-            else {
-                info!("Storage path verified");
-            }
-
-            // success then return the pathBuf
-            Ok(path.to_path_buf())
-        }
-        Err(e) => {
-            let err_msg = format!("Could not resolve the Storage Path issue: {}", e);
-            error!("{}", err_msg);
-            Err(err_msg)
-        }
-    };
-
-    storage_path
-    
+pub fn share_path(path: Option<PathBuf>, home: Option<PathBuf>) -> io::Result<PathBuf> {
+    path.or_else(|| home.map(|home| home.join("oxidrop-share")))
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "set HOME or pass --share-dir"))
 }
 
+pub fn init(path: Option<PathBuf>, home: Option<PathBuf>) -> io::Result<PathBuf> {
+    let path = share_path(path, home)?;
+    fs::create_dir_all(&path)?;
+    path.canonicalize()
+}
