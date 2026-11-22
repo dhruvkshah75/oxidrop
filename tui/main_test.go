@@ -307,15 +307,61 @@ func TestDragCopiesToOppositeFolder(t *testing.T) {
 	m.panes[0].applyFilter("")
 	m.panes[1].open(share)
 	boxes := m.paneBoxes()
+	waitCopy := func() {
+		t.Helper()
+		tasks.Wait()
+		for len(m.events) > 0 {
+			if result, ok := (<-m.events).(jobDone); ok {
+				if result.completed == 0 || len(result.errors) != 0 {
+					t.Fatalf("copy result: %+v", result)
+				}
+				m.Update(result)
+				return
+			}
+		}
+		t.Fatal("no copy completed")
+	}
 	m.mouse(tea.MouseMsg{X: boxes[0].x + 2, Y: boxes[0].y + 4, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
 	m.mouse(tea.MouseMsg{X: boxes[1].x + 2, Y: boxes[1].y + 3, Button: tea.MouseButtonLeft, Action: tea.MouseActionMotion})
 	m.mouse(tea.MouseMsg{X: boxes[1].x + 2, Y: boxes[1].y + 3, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
-	tasks.Wait()
+	waitCopy()
 	data, err := os.ReadFile(filepath.Join(share, "album", "photo.txt"))
 	if err != nil || string(data) != "hello" {
 		t.Fatalf("copied file: %q, %v", data, err)
 	}
-	if m.active != 0 {
-		t.Fatal("drag changed pane focus")
+
+	m.search(0, "")
+	m.panes[1].open(filepath.Join(share, "album"))
+	if err := os.WriteFile(filepath.Join(share, "album", "another.txt"), []byte("iPad"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	m.panes[1].load()
+	m.mouse(tea.MouseMsg{X: boxes[1].x + 2, Y: boxes[1].y + 3, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	m.mouse(tea.MouseMsg{X: boxes[1].x + 2, Y: boxes[1].y + 3, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
+	if m.active != 1 || m.panes[1].current() != "another.txt" || m.busy {
+		t.Fatal("click should focus the right pane and choose the row without copying")
+	}
+	m.key(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}, Alt: true})
+	m.mouse(tea.MouseMsg{X: boxes[1].x + 2, Y: boxes[1].y + 3, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	m.mouse(tea.MouseMsg{X: boxes[0].x + 2, Y: boxes[0].y + 1, Button: tea.MouseButtonLeft, Action: tea.MouseActionMotion})
+	m.mouse(tea.MouseMsg{X: boxes[0].x + 2, Y: boxes[0].y + 1, Action: tea.MouseActionRelease})
+	waitCopy()
+	for name, want := range map[string]string{"photo.txt": "hello", "another.txt": "iPad"} {
+		if data, err := os.ReadFile(filepath.Join(host, name)); err != nil || string(data) != want {
+			t.Fatalf("copied %s from the right pane: %q, %v", name, data, err)
+		}
+	}
+
+	// Copy from the right, then choose a different destination in the left pane.
+	if err := os.Mkdir(filepath.Join(host, "destination"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	m.key(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}, Alt: true})
+	m.key(tea.KeyMsg{Type: tea.KeyTab})
+	m.navigate(filepath.Join(host, "destination"))
+	m.key(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}, Alt: true})
+	waitCopy()
+	if data, err := os.ReadFile(filepath.Join(host, "destination", "another.txt")); err != nil || string(data) != "iPad" {
+		t.Fatalf("pasted file: %q, %v", data, err)
 	}
 }

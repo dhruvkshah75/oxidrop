@@ -72,7 +72,7 @@ The left pane starts in the directory you launch from. The right pane displays t
 | Input | Action |
 | --- | --- |
 | Tab / Shift+Tab | Switch panes. |
-| ↑ / ↓, Page Up / Page Down, mouse wheel | Browse entries. Clicking a row selects it for browsing or dragging. |
+| ↑ / ↓, Page Up / Page Down, mouse wheel | Browse entries. Click a row to focus its pane and choose the item. |
 | Enter / →, ← | Open a folder or file, or go up a directory. The right pane stays inside the share. |
 | Alt+G / Alt+U | Go to your home directory or filesystem root in the left pane. |
 | Type, or Alt+/ | Search the active pane. Typing opens search immediately. |
@@ -80,7 +80,8 @@ The left pane starts in the directory you launch from. The right pane displays t
 | Alt+Enter | Reveal a file in its containing folder. |
 | Ctrl+Space / Alt+A | Toggle one item or toggle all visible entries. |
 | Alt+C / Alt+M | Copy or move selected entries, or the highlighted entry, into the opposite pane's current directory. |
-| Drag a row across panes | Copy into the folder under the pointer or the destination pane's current directory. |
+| Drag a row across panes | Copy in either direction. Drop on a folder to copy into it, or elsewhere in the pane to use its current directory. Drag a marked row to copy the marked items. |
+| Alt+Y / Alt+V | Copy items to Oxidrop's clipboard, then paste into the active directory after switching panes or navigating. |
 | Ctrl+V | Import desktop clipboard files or save an image into the active directory. |
 | Ctrl+N / Alt+N, Ctrl+F | Create a folder or an empty file. |
 | Delete / Alt+D | Request deletion. Confirm with Alt+Y or cancel with Alt+N or Esc. |

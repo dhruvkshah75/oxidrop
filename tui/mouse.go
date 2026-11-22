@@ -39,6 +39,7 @@ func (p *filePane) entryWindow(height int) (first, start, end int) {
 type paneDrag struct {
 	from, x, y   int
 	parent, name string
+	names        []string
 	moved        bool
 }
 
@@ -73,15 +74,18 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 	index, hit := m.mouseHit(msg.X, msg.Y)
 	switch msg.Action {
 	case tea.MouseActionMotion:
-		if m.drag != nil {
+		if m.drag != nil && msg.Button == tea.MouseButtonLeft {
 			m.drag.moved = m.drag.moved || m.drag.x != msg.X || m.drag.y != msg.Y
 			m.drag.x, m.drag.y = msg.X, msg.Y
 		}
 	case tea.MouseActionRelease:
+		if msg.Button != tea.MouseButtonLeft && msg.Button != tea.MouseButtonNone {
+			return nil
+		}
 		drag := m.drag
 		m.drag = nil
 		if drag != nil && index >= 0 && index != drag.from {
-			return m.begin(job{"Copy", drag.parent, m.dropTarget(index, hit), m.cfg.Share, []string{drag.name}})
+			return m.begin(job{"Copy", drag.parent, m.dropTarget(index, hit), m.cfg.Share, drag.names})
 		}
 	case tea.MouseActionPress:
 		if index < 0 {
@@ -94,10 +98,16 @@ func (m *model) mouse(msg tea.MouseMsg) tea.Cmd {
 		case tea.MouseButtonWheelDown:
 			p.cursor = min(max(0, len(p.visible)-1), p.cursor+3)
 		case tea.MouseButtonLeft:
+			m.active = index
 			m.drag = nil
 			if hit >= 0 {
 				p.cursor = hit
-				m.drag = &paneDrag{from: index, x: msg.X, y: msg.Y, parent: p.path, name: p.current()}
+				name := p.current()
+				names := []string{name}
+				if p.selected[name] {
+					names = p.targets()
+				}
+				m.drag = &paneDrag{from: index, x: msg.X, y: msg.Y, parent: p.path, name: name, names: names}
 			}
 		}
 	}

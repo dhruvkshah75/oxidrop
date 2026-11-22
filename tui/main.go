@@ -47,6 +47,7 @@ type model struct {
 	input      textinput.Model
 	prompt     string
 	drag       *paneDrag
+	copied     job
 	helpOffset int
 	pending    *collision
 	confirm    *job
@@ -240,6 +241,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.message = ""
 		cmd = tea.Batch(m.nextEvent(), tea.ExecProcess(exec.Command("sudo", "-v"), func(err error) tea.Msg { return sudoResult{err} }))
 	case sudoResult:
+		// Bubble Tea restores the screen after ExecProcess but leaves mouse reporting off.
+		cmd = tea.EnableMouseCellMotion
 		if msg.err != nil {
 			m.status, m.message = "OFFLINE", "Samba authorization failed: "+msg.err.Error()
 			m.addLog(m.message)
@@ -298,6 +301,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) key(key tea.KeyMsg) tea.Cmd {
+	m.drag = nil
 	k := key.String()
 	if k == "ctrl+c" || k == "alt+q" {
 		return tea.Quit
@@ -467,6 +471,22 @@ func (m *model) key(key tea.KeyMsg) tea.Cmd {
 				p.selected[entry.Name()] = true
 			}
 		}
+	case "alt+y":
+		if names := p.targets(); len(names) != 0 {
+			m.copied = job{action: "Copy", from: p.path, share: m.cfg.Share, names: names}
+			m.message = fmt.Sprintf("%d copied to clipboard · Alt+V to paste", len(names))
+		}
+	case "alt+v":
+		if m.busy {
+			return nil
+		}
+		if len(m.copied.names) == 0 {
+			m.message = "Select an item and press Alt+Y to copy it"
+			return nil
+		}
+		request := m.copied
+		request.to = p.path
+		return m.begin(request)
 	case "alt+c", "alt+m", "alt+d", "delete", "alt+n", "ctrl+n", "ctrl+f":
 		if m.busy {
 			return nil
