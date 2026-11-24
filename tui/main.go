@@ -140,11 +140,14 @@ func (m *model) watchEvents() {
 		select {
 		case <-m.ctx.Done():
 			return
-		case _, ok := <-m.watcher.Events:
+		case event, ok := <-m.watcher.Events:
 			if !ok {
 				return
 			}
-			scheduleRefresh()
+			// The pane shows names and types, so content writes don't need a reload.
+			if event.Has(fsnotify.Create | fsnotify.Remove | fsnotify.Rename | fsnotify.Chmod) {
+				scheduleRefresh()
+			}
 		case err, ok := <-m.watcher.Errors:
 			if !ok {
 				return

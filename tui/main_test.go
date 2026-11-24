@@ -115,7 +115,8 @@ func TestShareWatchAndView(t *testing.T) {
 	m.panes[1].open(share)
 	m.watchShare()
 	go m.watchEvents()
-	if err := os.WriteFile(filepath.Join(share, "iPad upload.png"), []byte("picture"), 0600); err != nil {
+	upload := filepath.Join(share, "iPad upload.png")
+	if err := os.WriteFile(upload, nil, 0600); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -129,6 +130,14 @@ func TestShareWatchAndView(t *testing.T) {
 	}
 	if m.panes[1].current() != "iPad upload.png" {
 		t.Fatalf("right pane did not show the upload: %q", m.panes[1].current())
+	}
+	if err := os.WriteFile(upload, []byte("picture"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case msg := <-m.events:
+		t.Fatalf("writing to an existing file should not refresh the pane: %T", msg)
+	case <-time.After(250 * time.Millisecond):
 	}
 
 	for _, width := range []int{64, 100} {
